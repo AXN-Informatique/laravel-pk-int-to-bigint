@@ -1,0 +1,30 @@
+{
+    "name": "axn/laravel-pk-int-to-bigint",
+    "description": "Convert DB primary keys and related foreign keys type from INT to BIGINT.",
+    "homepage": "https://github.com/AXN-Informatique/laravel-pk-int-to-bigint",
+    "support": {
+        "issues": "https://github.com/AXN-Informatique/laravel-pk-int-to-bigint/issues"
+    },
+    "authors": [{
+            "name": "AXN Informatique",
+            "email": "developpement@axn.fr"
+        }
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.0",
+        "illuminate/support": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Axn\\PkIntToBigint\\": "src/"
+        }
+    },
+    "extra" : {
+        "laravel" : {
+            "providers" : [
+                "Axn\\PkIntToBigint\\ServiceProvider"
+            ]
+        }
+    }
+}
