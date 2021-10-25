@@ -9,7 +9,6 @@ class ServiceProvider extends BaseServiceProvider
     public function register()
     {
         if ($this->app->runningInConsole()) {
-
             $this->app->singleton('command.pk-int-to-bigint.transform', function($app) {
                 $db = $app['db.connection'];
                 $driverClass = __NAMESPACE__.'\Drivers\\'.ucfirst($db->getDriverName()).'Driver';
