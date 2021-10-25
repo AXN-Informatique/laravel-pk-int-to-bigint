@@ -1,0 +1,47 @@
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET NAMES utf8 */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+CREATE TABLE IF NOT EXISTS `table1` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'commentaire 1',
+  `col1` int(10) unsigned DEFAULT NULL,
+  `col2` varchar(50) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+/*!40000 ALTER TABLE `table1` DISABLE KEYS */;
+/*!40000 ALTER TABLE `table1` ENABLE KEYS */;
+
+CREATE TABLE IF NOT EXISTS `table2` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `table1_id` int(10) unsigned NOT NULL COMMENT 'commentaire 2',
+  PRIMARY KEY (`id`),
+  KEY `FK_table2_table1` (`table1_id`) USING BTREE,
+  CONSTRAINT `FK_table2_table1` FOREIGN KEY (`table1_id`) REFERENCES `table1` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+/*!40000 ALTER TABLE `table2` DISABLE KEYS */;
+/*!40000 ALTER TABLE `table2` ENABLE KEYS */;
+
+CREATE TABLE IF NOT EXISTS `table3` (
+  `id1` int(10) unsigned NOT NULL COMMENT 'commentaire 3',
+  `id2` int(10) unsigned NOT NULL,
+  `table1_id` int(10) unsigned NOT NULL DEFAULT '1' COMMENT 'commentaire 4',
+  `table2_id` int(10) unsigned DEFAULT NULL,
+  PRIMARY KEY (`id1`,`id2`),
+  KEY `FK_table3_table1` (`table1_id`) USING BTREE,
+  KEY `FK_table3_table2` (`table2_id`) USING BTREE,
+  CONSTRAINT `FK_table3_table1` FOREIGN KEY (`table1_id`) REFERENCES `table1` (`id`),
+  CONSTRAINT `FK_table3_table2` FOREIGN KEY (`table2_id`) REFERENCES `table2` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+/*!40000 ALTER TABLE `table3` DISABLE KEYS */;
+/*!40000 ALTER TABLE `table3` ENABLE KEYS */;
+
+/*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
+/*!40014 SET FOREIGN_KEY_CHECKS=IFNULL(@OLD_FOREIGN_KEY_CHECKS, 1) */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40111 SET SQL_NOTES=IFNULL(@OLD_SQL_NOTES, 1) */;
