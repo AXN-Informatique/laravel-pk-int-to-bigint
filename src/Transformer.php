@@ -94,7 +94,7 @@ class Transformer
                 }
             });
         }
-        
+
         // RESTORE FOREIGN KEY CONSTRAINTS
         foreach ($constraintsInfoByTable as $table => $constraintsInfo) {
             $this->schema->table($table, function (Blueprint $blueprint) use ($constraintsInfo, $table) {
