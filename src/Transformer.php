@@ -63,7 +63,7 @@ class Transformer
             $this->schema->table($table, function (Blueprint $blueprint) use ($constraintsInfo, &$foreignKeyColumnsNamesByTable, $table) {
                 foreach ($constraintsInfo as $constraintInfo) {
                     $this->message("Drop foreign on $table.{$constraintInfo['foreignKey']}");
-                    
+
                     $blueprint->dropForeign($constraintInfo['constraintName']);
 
                     $foreignKeyColumnsNamesByTable[$table][] = $constraintInfo['foreignKey'];
