@@ -31,7 +31,7 @@ class Transformer
 
     /**
      * Set console command instance for printing message to the console.
-     * 
+     *
      * @param  Command $command
      * @return void
      */
@@ -44,37 +44,49 @@ class Transformer
      * 1) Drop all foreign key constraints on each table
      * 2) Change INT to BIGINT on primary and foreign key columns on each table
      * 3) Restore all foreign key constraints on each table
-     * 
+     *
      * @return void
      */
     public function transform()
     {
-        $constraintsInfoByTable = [];
-        $intColumnsInfoByTable = [];
-        $primaryKeyColumnsNamesByTable = [];
-        $foreignKeyColumnsNamesByTable = [];
-        $hasConstraintAnomaly = false;
+        $foreignKeyConstraintsInfo = collect();
+        $intColumnsInfo = collect();
 
         foreach ($this->driver->getTablesNames() as $table) {
-            $constraintsInfoByTable[$table] = $this->driver->getForeignKeyConstraintsInfo($table);
-            $intColumnsInfoByTable[$table] = $this->driver->getIntColumnsInfo($table);
-            $primaryKeyColumnsNamesByTable[$table] = $this->driver->getPrimaryKeyColumnsNames($table);
-            
-            foreach ($constraintsInfoByTable[$table] as $constraintInfo) {
-                $foreignKeyColumnsNamesByTable[$table][] = $constraintInfo['foreignKey'];
+            $tableForeignKeyConstraintsInfo = $this->driver->getForeignKeyConstraintsInfo($table);
 
-                // If there are data that do not respect a foreign key constraint,
-                // it will be impossible to restore the constraint after deleting it.
-                // So, we check this before doing any action.
-                if ($this->hasConstraintAnomaly($table, $constraintInfo)) {
-                    $this->message(
-                        "Anomaly on constraint {$constraintInfo['constraintName']}: "
-                            ."$table.{$constraintInfo['foreignKey']} references "
-                            ."{$constraintInfo['relatedTable']}.{$constraintInfo['relatedColumn']}",
-                        'error'
-                    );
-                    $hasConstraintAnomaly = true;
-                }
+            // keys = primary keys + foreign keys
+            $tableKeyColumnsNames = $tableForeignKeyConstraintsInfo
+                ->pluck('column')
+                ->merge($this->driver->getPrimaryKeyColumnsNames($table));
+
+            // keep only INT columns that are a key
+            $tableIntColumnsInfo = $this->driver->getIntColumnsInfo($table)
+                ->filter(fn ($column) => $tableKeyColumnsNames->contains($column['column']));
+
+            // keep only foreign keys that are INT
+            $tableForeignKeyConstraintsInfo = $tableForeignKeyConstraintsInfo
+                ->filter(fn ($constraint) => $tableIntColumnsInfo->contains('column', $constraint['column']));
+
+            $foreignKeyConstraintsInfo = $foreignKeyConstraintsInfo->merge($tableForeignKeyConstraintsInfo);
+            $intColumnsInfo = $intColumnsInfo->merge($tableIntColumnsInfo);
+        }
+
+        $hasConstraintAnomaly = false;
+
+        foreach ($foreignKeyConstraintsInfo as $constraint) {
+            // If there are data that do not respect a foreign key constraint,
+            // it will be impossible to restore the constraint after deleting it.
+            // So, we check this before doing any action.
+            if ($this->hasConstraintAnomaly($constraint)) {
+                $this->message(
+                    "Anomaly on constraint {$constraint['name']}: "
+                        ."{$constraint['table']}.{$constraint['column']} references "
+                        ."{$constraint['relatedTable']}.{$constraint['relatedColumn']}",
+                    'error'
+                );
+
+                $hasConstraintAnomaly = true;
             }
         }
 
@@ -83,73 +95,57 @@ class Transformer
         }
 
         // DROP FOREIGN KEY CONSTRAINTS
-        foreach ($constraintsInfoByTable as $table => $constraintsInfo) {
-            foreach ($constraintsInfo as $constraintInfo) {
-                $this->message("Drop foreign on $table.{$constraintInfo['foreignKey']}");
+        foreach ($foreignKeyConstraintsInfo as $constraint) {
+            $this->message("Drop foreign on {$constraint['table']}.{$constraint['column']}");
 
-                $this->schema->table($table, function (Blueprint $blueprint) use ($constraintInfo) {
-                    $blueprint->dropForeign($constraintInfo['constraintName']);
-                });
-            }
+            $this->schema->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
+                $blueprint->dropForeign($constraint['name']);
+            });
         }
 
         // CHANGE INT TO BIGINT
-        foreach ($intColumnsInfoByTable as $table => $intColumnsInfo) {
-            $keyColumnsNames = array_merge(
-                $primaryKeyColumnsNamesByTable[$table],
-                $foreignKeyColumnsNamesByTable[$table]
-            );
+        foreach ($intColumnsInfo as $column) {
+            $this->message("Change INT to BIGINT for {$column['table']}.{$column['column']}");
 
-            foreach ($intColumnsInfo as $intColumnInfo) {
-                if (! in_array($intColumnInfo['columnName'], $keyColumnsNames)) {
-                    continue;
-                }
-
-                $this->message("Change INT to BIGINT for $table.{$intColumnInfo['columnName']}");
-
-                $this->schema->table($table, function (Blueprint $blueprint) use ($intColumnInfo) {
-                    $blueprint
-                        ->unsignedBigInteger($intColumnInfo['columnName'], $intColumnInfo['autoIncrement'])
-                        ->nullable($intColumnInfo['nullable'])
-                        ->default($intColumnInfo['default'])
-                        ->change();
-                });
-            }
+            $this->schema->table($column['table'], function (Blueprint $blueprint) use ($column) {
+                $blueprint
+                    ->unsignedBigInteger($column['column'], $column['autoIncrement'])
+                    ->nullable($column['nullable'])
+                    ->default($column['default'])
+                    ->change();
+            });
         }
 
         // RESTORE FOREIGN KEY CONSTRAINTS
-        foreach ($constraintsInfoByTable as $table => $constraintsInfo) {
-            foreach ($constraintsInfo as $constraintInfo) {
-                $this->message("Restore foreign on $table.{$constraintInfo['foreignKey']}");
+        foreach ($foreignKeyConstraintsInfo as $constraint) {
+            $this->message("Restore foreign on {$constraint['table']}.{$constraint['column']}");
 
-                $this->schema->table($table, function (Blueprint $blueprint) use ($constraintInfo) {
-                    $blueprint
-                        ->foreign($constraintInfo['foreignKey'], $constraintInfo['constraintName'])
-                        ->references($constraintInfo['relatedColumn'])
-                        ->on($constraintInfo['relatedTable'])
-                        ->onDelete($constraintInfo['onDelete'])
-                        ->onUpdate($constraintInfo['onUpdate']);
-                });
-            }
+            $this->schema->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
+                $blueprint
+                    ->foreign($constraint['column'], $constraint['name'])
+                    ->references($constraint['relatedColumn'])
+                    ->on($constraint['relatedTable'])
+                    ->onDelete($constraint['onDelete'])
+                    ->onUpdate($constraint['onUpdate']);
+            });
         }
     }
 
     /**
      * Says if there are data that do not respect a foreign key constraint.
      *
-     * @param  string $table
-     * @param  array  $constraintInfo
+     * @param  array  $constraint
      * @return bool
      */
-    protected function hasConstraintAnomaly($table, array $constraintInfo)
+    protected function hasConstraintAnomaly(array $constraint)
     {
         return $this->db
-            ->table($table)
-            ->whereNotNull($constraintInfo['foreignKey'])
-            ->whereNotIn($constraintInfo['foreignKey'], function ($query) use ($constraintInfo) {
+            ->table($constraint['table'])
+            ->whereNotNull($constraint['column'])
+            ->whereNotIn($constraint['column'], function ($query) use ($constraint) {
                 $query
-                    ->from($constraintInfo['relatedTable'])
-                    ->select($constraintInfo['relatedColumn']);
+                    ->from($constraint['relatedTable'])
+                    ->select($constraint['relatedColumn']);
             })
             ->exists();
     }

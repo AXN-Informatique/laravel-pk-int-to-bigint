@@ -13,12 +13,12 @@ class ServiceProvider extends BaseServiceProvider
                 $db = $app['db.connection'];
                 $driverClass = __NAMESPACE__.'\Drivers\\'.ucfirst($db->getDriverName()).'Driver';
                 $driver = new $driverClass($db->getPdo());
-    
+
                 $transformer = new Transformer($driver, $db);
-    
+
                 return new Console\TransformCommand($transformer);
             });
-    
+
             $this->commands([
                 'command.pk-int-to-bigint.transform'
             ]);

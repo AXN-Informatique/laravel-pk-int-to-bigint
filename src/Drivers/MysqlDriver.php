@@ -2,6 +2,7 @@
 
 namespace Axn\PkIntToBigint\Drivers;
 
+use Illuminate\Support\Collection;
 use PDO;
 
 class MysqlDriver implements Driver
@@ -30,7 +31,7 @@ class MysqlDriver implements Driver
      */
     public function getTablesNames()
     {
-        $query = $this->pdo->query('SHOW TABLES');
+        $query = $this->pdo->query('SHOW FULL TABLES WHERE Table_Type != "VIEW"');
 
         return $query->fetchAll(PDO::FETCH_COLUMN);
     }
@@ -52,7 +53,7 @@ class MysqlDriver implements Driver
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getForeignKeyConstraintsInfo($table)
     {
@@ -68,21 +69,22 @@ class MysqlDriver implements Driver
 
         foreach ($matches[0] as $index => $constraint) {
             $constraintsInfo[] = [
-                'constraintName' => $matches[1][$index],
-                'foreignKey'     => $matches[2][$index],
-                'relatedTable'   => $matches[3][$index],
-                'relatedColumn'  => $matches[4][$index],
-                'onDelete'       => $matches[6][$index] ?: null,
-                'onUpdate'       => $matches[8][$index] ?: null,
+                'name'          => $matches[1][$index],
+                'table'         => $table,
+                'column'        => $matches[2][$index],
+                'relatedTable'  => $matches[3][$index],
+                'relatedColumn' => $matches[4][$index],
+                'onDelete'      => $matches[6][$index] ?: null,
+                'onUpdate'      => $matches[8][$index] ?: null,
             ];
         }
 
-        return $constraintsInfo;
+        return collect($constraintsInfo);
     }
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getPrimaryKeyColumnsNames($table)
     {
@@ -93,15 +95,15 @@ class MysqlDriver implements Driver
         );
 
         if (! isset($matches[1])) {
-            return [];
+            return collect();
         }
 
-        return explode(',', str_replace('`', '', $matches[1]));
+        return collect(explode(',', str_replace('`', '', $matches[1])));
     }
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getIntColumnsInfo($table)
     {
@@ -119,15 +121,16 @@ class MysqlDriver implements Driver
             } else {
                 $default = null;
             }
-            
+
             $columnsInfo[] = [
-                'columnName'    => $matches[1][$index],
+                'table'         => $table,
+                'column'        => $matches[1][$index],
                 'autoIncrement' => strpos($matches[2][$index], 'AUTO_INCREMENT') !== false,
                 'nullable'      => strpos($matches[2][$index], 'NOT NULL') === false,
                 'default'       => $default
             ];
         }
 
-        return $columnsInfo;
+        return collect($columnsInfo);
     }
 }

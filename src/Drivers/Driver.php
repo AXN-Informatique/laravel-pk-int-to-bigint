@@ -2,6 +2,8 @@
 
 namespace Axn\PkIntToBigint\Drivers;
 
+use Illuminate\Support\Collection;
+
 interface Driver
 {
     /**
@@ -17,19 +19,19 @@ interface Driver
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getForeignKeyConstraintsInfo($table);
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getPrimaryKeyColumnsNames($table);
 
     /**
      * @param  string $table
-     * @return array
+     * @return Collection
      */
     public function getIntColumnsInfo($table);
 }
