@@ -57,7 +57,9 @@ class MysqlDriver implements Driver
     public function getForeignKeyConstraintsInfo($table)
     {
         preg_match_all(
-            '/CONSTRAINT `(\w+)` FOREIGN KEY \(`(\w+)`\) REFERENCES `(\w+)` \(`(\w+)`\)/Us',
+            '/CONSTRAINT `(\w+)` FOREIGN KEY \(`(\w+)`\) REFERENCES `(\w+)` \(`(\w+)`\)'
+                .'( ON DELETE (CASCADE|SET NULL|NO ACTION)|)'
+                .'( ON UPDATE (CASCADE|SET NULL|NO ACTION)|)/Us',
             $this->getSqlCreateTable($table),
             $matches
         );
@@ -69,7 +71,9 @@ class MysqlDriver implements Driver
                 'constraintName' => $matches[1][$index],
                 'foreignKey'     => $matches[2][$index],
                 'relatedTable'   => $matches[3][$index],
-                'relatedColumn'  => $matches[4][$index]
+                'relatedColumn'  => $matches[4][$index],
+                'onDelete'       => $matches[6][$index] ?: null,
+                'onUpdate'       => $matches[8][$index] ?: null,
             ];
         }
 

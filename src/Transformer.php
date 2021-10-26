@@ -104,7 +104,9 @@ class Transformer
                     $blueprint
                         ->foreign($constraintInfo['foreignKey'], $constraintInfo['constraintName'])
                         ->references($constraintInfo['relatedColumn'])
-                        ->on($constraintInfo['relatedTable']);
+                        ->on($constraintInfo['relatedTable'])
+                        ->onDelete($constraintInfo['onDelete'])
+                        ->onUpdate($constraintInfo['onUpdate']);
                 }
             });
         }
