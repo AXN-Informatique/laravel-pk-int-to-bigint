@@ -14,7 +14,7 @@ class ServiceProvider extends BaseServiceProvider
                 $driverClass = __NAMESPACE__.'\Drivers\\'.ucfirst($db->getDriverName()).'Driver';
                 $driver = new $driverClass($db->getPdo());
     
-                $transformer = new Transformer($driver, $db->getSchemaBuilder());
+                $transformer = new Transformer($driver, $db);
     
                 return new Console\TransformCommand($transformer);
             });
