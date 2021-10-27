@@ -1,6 +1,6 @@
 {
     "name": "axn/laravel-pk-int-to-bigint",
-    "description": "Convert DB primary keys and related foreign keys type from INT to BIGINT.",
+    "description": "Convert DB primary keys and related foreign keys type from INT to BIGINT in a Laravel project",
     "homepage": "https://github.com/AXN-Informatique/laravel-pk-int-to-bigint",
     "support": {
         "issues": "https://github.com/AXN-Informatique/laravel-pk-int-to-bigint/issues"
