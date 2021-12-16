@@ -108,7 +108,7 @@ class MysqlDriver implements Driver
     public function getIntColumnsInfo($table)
     {
         preg_match_all(
-            '/`(\w+)` int\(\d{1,2}\) unsigned(.*),/Us',
+            '/`(\w+)` int.* unsigned(.*),/Us',
             $this->getSqlCreateTable($table),
             $matches
         );
