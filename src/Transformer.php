@@ -2,31 +2,31 @@
 
 namespace Axn\PkIntToBigint;
 
-use Axn\PkIntToBigint\Drivers\Driver;
+use Doctrine\DBAL\Schema\AbstractSchemaManager as DoctrineSchemaManager;
+use Doctrine\DBAL\Types\IntegerType;
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Database\Schema\Builder as Schema;
+use Illuminate\Database\Schema\Builder as SchemaBuilder;
 
 class Transformer
 {
-    protected Driver $driver;
+    protected Connection $connection;
 
-    protected Connection $db;
+    protected DoctrineSchemaManager $doctrineSchemaManager;
 
-    protected Schema $schema;
+    protected SchemaBuilder $schemaBuilder;
 
     protected $command = null;
 
     /**
-     * @param Driver $driver
      * @param Connection $connection
      */
-    public function __construct(Driver $driver, Connection $db)
+    public function __construct(Connection $connection)
     {
-        $this->driver = $driver;
-        $this->db = $db;
-        $this->schema = $db->getSchemaBuilder();
+        $this->connection = $connection;
+        $this->doctrineSchemaManager = $connection->getDoctrineSchemaManager();
+        $this->schemaBuilder = $connection->getSchemaBuilder();
     }
 
     /**
@@ -49,38 +49,17 @@ class Transformer
      */
     public function transform()
     {
-        $foreignKeyConstraintsInfo = collect();
-        $intColumnsInfo = collect();
-
-        foreach ($this->driver->getTablesNames() as $table) {
-            $tableForeignKeyConstraintsInfo = $this->driver->getForeignKeyConstraintsInfo($table);
-
-            // keys = primary keys + foreign keys
-            $tableKeyColumnsNames = $tableForeignKeyConstraintsInfo
-                ->pluck('column')
-                ->merge($this->driver->getPrimaryKeyColumnsNames($table));
-
-            // keep only INT columns that are a key
-            $tableIntColumnsInfo = $this->driver->getIntColumnsInfo($table)
-                ->filter(fn ($column) => $tableKeyColumnsNames->contains($column['column']));
-
-            // keep only foreign keys that are INT
-            $tableForeignKeyConstraintsInfo = $tableForeignKeyConstraintsInfo
-                ->filter(fn ($constraint) => $tableIntColumnsInfo->contains('column', $constraint['column']));
-
-            $foreignKeyConstraintsInfo = $foreignKeyConstraintsInfo->merge($tableForeignKeyConstraintsInfo);
-            $intColumnsInfo = $intColumnsInfo->merge($tableIntColumnsInfo);
-        }
+        $this->extractSchemaInfos();
 
         $hasConstraintAnomaly = false;
 
-        foreach ($foreignKeyConstraintsInfo as $constraint) {
+        foreach ($this->foreignKeysConstraintsInfo as $constraint) {
             // If there are data that do not respect a foreign key constraint,
             // it will be impossible to restore the constraint after deleting it.
             // So, we check this before doing any action.
             if ($this->hasConstraintAnomaly($constraint)) {
                 $this->message(
-                    "Anomaly on constraint {$constraint['name']}: "
+                    "Foreign key constraint anomaly: [{$constraint['name']}] "
                         ."{$constraint['table']}.{$constraint['column']} references "
                         ."{$constraint['relatedTable']}.{$constraint['relatedColumn']}",
                     'error'
@@ -95,19 +74,21 @@ class Transformer
         }
 
         // DROP FOREIGN KEY CONSTRAINTS
-        foreach ($foreignKeyConstraintsInfo as $constraint) {
+
+        foreach ($this->foreignKeysConstraintsInfo as $constraint) {
             $this->message("Drop foreign on {$constraint['table']}.{$constraint['column']}");
 
-            $this->schema->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
+            $this->schemaBuilder->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
                 $blueprint->dropForeign($constraint['name']);
             });
         }
 
         // CHANGE INT TO BIGINT
-        foreach ($intColumnsInfo as $column) {
+
+        foreach ($this->intColumnsInfo as $column) {
             $this->message("Change INT to BIGINT for {$column['table']}.{$column['column']}");
 
-            $this->schema->table($column['table'], function (Blueprint $blueprint) use ($column) {
+            $this->schemaBuilder->table($column['table'], function (Blueprint $blueprint) use ($column) {
                 $blueprint
                     ->unsignedBigInteger($column['column'], $column['autoIncrement'])
                     ->nullable($column['nullable'])
@@ -117,10 +98,11 @@ class Transformer
         }
 
         // RESTORE FOREIGN KEY CONSTRAINTS
-        foreach ($foreignKeyConstraintsInfo as $constraint) {
+
+        foreach ($this->foreignKeysConstraintsInfo as $constraint) {
             $this->message("Restore foreign on {$constraint['table']}.{$constraint['column']}");
 
-            $this->schema->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
+            $this->schemaBuilder->table($constraint['table'], function (Blueprint $blueprint) use ($constraint) {
                 $blueprint
                     ->foreign($constraint['column'], $constraint['name'])
                     ->references($constraint['relatedColumn'])
@@ -132,14 +114,86 @@ class Transformer
     }
 
     /**
+     * On each table :
+     * 1) Extract information on unsigned integer columns that are primary or foreign key.
+     * 2) Extract information on foreign keys constraints concerning unsigned integer columns.
+     *
+     * @return void
+     */
+    protected function extractSchemaInfos()
+    {
+        $this->intColumnsInfo = [];
+        $this->foreignKeysConstraintsInfo = [];
+
+        foreach ($this->doctrineSchemaManager->listTables() as $table) {
+            $tableIntColumnsNames = [];
+
+            // GET TABLE KEYS COLUMNS NAMES
+
+            $tableKeysColumnsNames = [];
+
+            // primary keys...
+            if ($table->hasPrimaryKey()) {
+                $tableKeysColumnsNames = $table->getPrimaryKeyColumns();
+            }
+
+            // ... + foreign keys
+            foreach ($table->getForeignKeys() as $foreignKey) {
+                $tableKeysColumnsNames = array_merge($tableKeysColumnsNames, $foreignKey->getLocalColumns());
+            }
+
+            // GET UNSIGNED INTEGER COLUMNS NAMES AND INFOS
+
+            foreach ($table->getColumns() as $column) {
+                // keep only unsigned integer columns that are a key
+                if (! $column->getType() instanceof IntegerType
+                    || ! $column->getUnsigned()
+                    || ! in_array($column->getName(), $tableKeysColumnsNames)) {
+
+                    continue;
+                }
+
+                $tableIntColumnsNames[] = $column->getName();
+
+                $this->intColumnsInfo[] = [
+                    'table' => $table->getName(),
+                    'column' => $column->getName(),
+                    'nullable' => ! $column->getNotnull(),
+                    'default' => $column->getDefault(),
+                    'autoIncrement' => $column->getAutoincrement(),
+                ];
+            }
+
+            // GET FOREIGN KEYS CONSTRAINTS INFOS
+
+            foreach ($table->getForeignKeys() as $foreignKey) {
+                // keep only foreign keys that are unsigned integer
+                if (! in_array($foreignKey->getLocalColumns()[0], $tableIntColumnsNames)) {
+                    continue;
+                }
+
+                $this->foreignKeysConstraintsInfo[] = [
+                    'name' => $foreignKey->getName(),
+                    'table' => $foreignKey->getLocalTableName(),
+                    'column' => $foreignKey->getLocalColumns()[0],
+                    'relatedTable' => $foreignKey->getForeignTableName(),
+                    'relatedColumn' => $foreignKey->getForeignColumns()[0],
+                    'onUpdate' => $foreignKey->onUpdate(),
+                    'onDelete' => $foreignKey->onDelete(),
+                ];
+            }
+        }
+    }
+
+    /**
      * Says if there are data that do not respect a foreign key constraint.
      *
-     * @param  array  $constraint
+     * @param  array $constraint
      * @return bool
      */
     protected function hasConstraintAnomaly(array $constraint)
     {
-        return $this->db
+        return $this->connection
             ->table($constraint['table'])
             ->whereNotNull($constraint['column'])
             ->whereNotIn($constraint['column'], function ($query) use ($constraint) {
