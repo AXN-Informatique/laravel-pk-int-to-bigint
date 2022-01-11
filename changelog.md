@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.2.0 (2022-01-11)
+------------------
+
+- Possibility of generating a migration in order to simplify the implementation
+
+
 1.1.0 (2022-01-10)
 ------------------
 
