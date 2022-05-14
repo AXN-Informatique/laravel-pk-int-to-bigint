@@ -134,7 +134,7 @@ class Transformer
 
             // primary keys...
             if ($table->hasPrimaryKey()) {
-                $tableKeysColumnsNames = $table->getPrimaryKeyColumns();
+                $tableKeysColumnsNames = array_keys($table->getPrimaryKeyColumns());
             }
 
             // ... + foreign keys
