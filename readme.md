@@ -30,6 +30,14 @@ Usage
 
 First create a dump of your database in case there is a problem.
 
+### Manualy
+
+If you want to run the command directly:
+
+```sh
+php artisan pk-int-to-bigint:transform
+```
+
 ### With migration
 
 Pusblish the migration:
@@ -41,11 +49,3 @@ php artisan migrate
 ```
 
 So you can incorporate it into your deployment workflow.
-
-### Manualy
-
-If you want to run the command directly:
-
-```sh
-php artisan pk-int-to-bigint:transform
-```
