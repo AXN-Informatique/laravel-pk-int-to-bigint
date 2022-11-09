@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.3.1 (2022-11-09)
+------------------
+
+- Fix support for doctrine/dbal >= 3.1
+- Drop Transformer injection from command constructor
+
+
 1.3.0 (2022-08-05)
 ------------------
 

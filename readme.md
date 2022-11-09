@@ -46,10 +46,8 @@ Pusblish the migration:
 php artisan vendor:publish --tag="pk-int-to-bigint-migration"
 ```
 
-Then run
+So you can incorporate it into your deployment workflow with:
 
-```sh
+```
 php artisan migrate
 ```
-
-So you can incorporate it into your deployment workflow.
