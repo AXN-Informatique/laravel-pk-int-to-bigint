@@ -133,8 +133,8 @@ class Transformer
             $tableKeysColumnsNames = [];
 
             // primary keys...
-            if ($table->hasPrimaryKey()) {
-                $tableKeysColumnsNames = $table->getPrimaryKeyColumns();
+            if ($primaryKey = $table->getPrimaryKey()) {
+                $tableKeysColumnsNames = $primaryKey->getColumns();
             }
 
             // ... + foreign keys
