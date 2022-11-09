@@ -44,7 +44,11 @@ Pusblish the migration:
 
 ```sh
 php artisan vendor:publish --tag="pk-int-to-bigint-migration"
+```
 
+Then run
+
+```sh
 php artisan migrate
 ```
 
