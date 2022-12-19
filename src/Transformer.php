@@ -17,7 +17,11 @@ class Transformer
 
     protected SchemaBuilder $schemaBuilder;
 
-    protected $command = null;
+    protected ?Command $command = null;
+
+    private array $intColumnsInfo = [];
+
+    private array $foreignKeysConstraintsInfo = [];
 
     /**
      * @param Connection $connection
@@ -35,7 +39,7 @@ class Transformer
      * @param  Command $command
      * @return void
      */
-    public function setConsoleCommand(Command $command)
+    public function setConsoleCommand(Command $command): void
     {
         $this->command = $command;
     }
@@ -47,7 +51,7 @@ class Transformer
      *
      * @return void
      */
-    public function transform()
+    public function transform(): void
     {
         $this->extractSchemaInfos();
 
@@ -120,7 +124,7 @@ class Transformer
      *
      * @return void
      */
-    protected function extractSchemaInfos()
+    private function extractSchemaInfos(): void
     {
         $this->intColumnsInfo = [];
         $this->foreignKeysConstraintsInfo = [];
@@ -191,7 +195,7 @@ class Transformer
      * @param  array $constraint
      * @return bool
      */
-    protected function hasConstraintAnomaly(array $constraint)
+    private function hasConstraintAnomaly(array $constraint): bool
     {
         return $this->connection
             ->table($constraint['table'])
@@ -211,7 +215,7 @@ class Transformer
      * @param  string $style
      * @return void
      */
-    protected function message($message, $style = 'info')
+    protected function message(string $message, string $style = 'info'): void
     {
         if ($this->command !== null) {
             $this->command->line($message, $style);

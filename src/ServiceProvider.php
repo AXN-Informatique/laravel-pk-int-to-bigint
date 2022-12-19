@@ -26,7 +26,7 @@ class ServiceProvider extends BaseServiceProvider
 
         $this->publishes([
             __DIR__.'/../database/migrations/transform_pk_int_to_bigint.php.stub' =>
-            database_path('migrations/' . now()->format('Y_m_d_His') . '_transform_pk_int_to_bigint.php'),
+                database_path('migrations/'.now()->format('Y_m_d_His').'_transform_pk_int_to_bigint.php'),
         ], 'pk-int-to-bigint-migration');
     }
 }
