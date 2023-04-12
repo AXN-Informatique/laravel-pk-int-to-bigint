@@ -4,7 +4,7 @@ Changelog
 2.1.0 (2023-04-12)
 ------------------
 
-- Add support for Laravel 10
+- Added support for Laravel 10
 - Uppercase README and CHANGELOG fielnames
 
 
@@ -24,14 +24,14 @@ Changelog
 1.3.1 (2022-11-09)
 ------------------
 
-- Fix support for doctrine/dbal >= 3.5
-- Drop Transformer injection from command constructor
+- Fixed support for doctrine/dbal >= 3.5
+- Dropped Transformer injection from command constructor
 
 
 1.3.0 (2022-08-05)
 ------------------
 
-- Add support for Laravel 9
+- Added support for Laravel 9
 
 
 1.2.0 (2022-01-11)
