@@ -1,6 +1,13 @@
 Changelog
 =========
 
+2.1.0 (2023-04-12)
+------------------
+
+- Add support for Laravel 10
+- Uppercase README and CHANGELOG fielnames
+
+
 2.0.0 (2022-12-19)
 ------------------
 
