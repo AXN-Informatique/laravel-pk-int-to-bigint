@@ -1,11 +1,12 @@
 Changelog
 =========
 
-2.2.0 (2023-07-03)
+2.1.1 (2023-07-03)
 ------------------
 
-- Removed unsigned constraint for keys
 - Prevent running migration if package is uninstalled
+- Removed unsigned constraint for keys
+- Prevent errors in the presence of enum type columns (close #2)
 
 
 2.1.0 (2023-04-12)

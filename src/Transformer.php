@@ -31,6 +31,9 @@ class Transformer
         $this->connection = $connection;
         $this->doctrineSchemaManager = $connection->getDoctrineSchemaManager();
         $this->schemaBuilder = $connection->getSchemaBuilder();
+
+        // Prevention of errors in the presence of enum type columns
+        $this->connection->getDoctrineConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
     }
 
     /**
