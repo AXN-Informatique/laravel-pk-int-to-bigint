@@ -149,11 +149,9 @@ class Transformer
             // GET UNSIGNED INTEGER COLUMNS NAMES AND INFOS
 
             foreach ($table->getColumns() as $column) {
-                // keep only unsigned integer columns that are a key
+                // keep only integer columns that are a key
                 if (! $column->getType() instanceof IntegerType
-                    || ! $column->getUnsigned()
                     || ! in_array($column->getName(), $tableKeysColumnsNames)) {
-
                     continue;
                 }
 

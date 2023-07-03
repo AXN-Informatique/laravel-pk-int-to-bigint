@@ -1,9 +1,10 @@
 Changelog
 =========
 
-2.1.0 (2023-07-03)
+2.2.0 (2023-07-03)
 ------------------
 
+- Removed unsigned constraint for keys
 - Prevent running migration if package is uninstalled
 
 
