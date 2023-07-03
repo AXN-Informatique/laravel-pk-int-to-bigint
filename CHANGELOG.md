@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2.1.0 (2023-07-03)
+------------------
+
+- Prevent running migration if package is uninstalled
+
+
 2.1.0 (2023-04-12)
 ------------------
 
