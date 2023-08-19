@@ -34,6 +34,9 @@ class Transformer
 
         // Prevention of errors in the presence of enum type columns
         $this->connection->getDoctrineConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+
+        // Prevention of errors in the presence of point (spatial) type columns
+        $this->connection->getDoctrineConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('point', 'string');
     }
 
     /**
