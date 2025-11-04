@@ -2,8 +2,6 @@
 
 namespace Axn\PkIntToBigint;
 
-use Doctrine\DBAL\Schema\AbstractSchemaManager as DoctrineSchemaManager;
-use Doctrine\DBAL\Types\IntegerType;
 use Illuminate\Console\Command;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
@@ -12,8 +10,6 @@ use Illuminate\Database\Schema\Builder as SchemaBuilder;
 class Transformer
 {
     protected Connection $connection;
-
-    protected DoctrineSchemaManager $doctrineSchemaManager;
 
     protected SchemaBuilder $schemaBuilder;
 
@@ -29,11 +25,7 @@ class Transformer
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
-        $this->doctrineSchemaManager = $connection->getDoctrineSchemaManager();
         $this->schemaBuilder = $connection->getSchemaBuilder();
-
-        // Prevention of errors in the presence of enum type columns
-        $this->connection->getDoctrineConnection()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
     }
 
     /**
@@ -132,62 +124,99 @@ class Transformer
         $this->intColumnsInfo = [];
         $this->foreignKeysConstraintsInfo = [];
 
-        foreach ($this->doctrineSchemaManager->listTables() as $table) {
+        foreach ($this->schemaBuilder->getTables() as $table) {
+            $tableName = $table['name'];
             $tableIntColumnsNames = [];
 
             // GET TABLE KEYS COLUMNS NAMES
 
             $tableKeysColumnsNames = [];
 
-            // primary keys...
-            if ($primaryKey = $table->getPrimaryKey()) {
-                $tableKeysColumnsNames = $primaryKey->getColumns();
+            // Get all columns for this table
+            $columns = $this->schemaBuilder->getColumns($tableName);
+
+            // Get primary keys
+            $indexes = $this->schemaBuilder->getIndexes($tableName);
+            foreach ($indexes as $index) {
+                if ($index['primary']) {
+                    $tableKeysColumnsNames = array_merge($tableKeysColumnsNames, $index['columns']);
+                }
             }
 
-            // ... + foreign keys
-            foreach ($table->getForeignKeys() as $foreignKey) {
-                $tableKeysColumnsNames = array_merge($tableKeysColumnsNames, $foreignKey->getLocalColumns());
+            // Get foreign keys
+            $foreignKeys = $this->schemaBuilder->getForeignKeys($tableName);
+            foreach ($foreignKeys as $foreignKey) {
+                $tableKeysColumnsNames = array_merge($tableKeysColumnsNames, $foreignKey['columns']);
             }
 
             // GET UNSIGNED INTEGER COLUMNS NAMES AND INFOS
 
-            foreach ($table->getColumns() as $column) {
+            foreach ($columns as $column) {
+                $columnName = $column['name'];
+                $columnType = strtolower($column['type_name'] ?? $column['type'] ?? '');
+
                 // keep only integer columns that are a key
-                if (! $column->getType() instanceof IntegerType
-                    || ! in_array($column->getName(), $tableKeysColumnsNames)) {
+                if (! $this->isIntegerType($columnType)
+                    || ! in_array($columnName, $tableKeysColumnsNames)) {
                     continue;
                 }
 
-                $tableIntColumnsNames[] = $column->getName();
+                $tableIntColumnsNames[] = $columnName;
 
                 $this->intColumnsInfo[] = [
-                    'table' => $table->getName(),
-                    'column' => $column->getName(),
-                    'nullable' => ! $column->getNotnull(),
-                    'default' => $column->getDefault(),
-                    'autoIncrement' => $column->getAutoincrement(),
+                    'table' => $tableName,
+                    'column' => $columnName,
+                    'nullable' => $column['nullable'],
+                    'default' => $column['default'],
+                    'autoIncrement' => $column['auto_increment'],
                 ];
             }
 
             // GET FOREIGN KEYS CONSTRAINTS INFOS
 
-            foreach ($table->getForeignKeys() as $foreignKey) {
+            foreach ($foreignKeys as $foreignKey) {
                 // keep only foreign keys that are unsigned integer
-                if (! in_array($foreignKey->getLocalColumns()[0], $tableIntColumnsNames)) {
+                if (! in_array($foreignKey['columns'][0], $tableIntColumnsNames)) {
                     continue;
                 }
 
                 $this->foreignKeysConstraintsInfo[] = [
-                    'name' => $foreignKey->getName(),
-                    'table' => $foreignKey->getLocalTableName(),
-                    'column' => $foreignKey->getLocalColumns()[0],
-                    'relatedTable' => $foreignKey->getForeignTableName(),
-                    'relatedColumn' => $foreignKey->getForeignColumns()[0],
-                    'onUpdate' => $foreignKey->onUpdate(),
-                    'onDelete' => $foreignKey->onDelete(),
+                    'name' => $foreignKey['name'],
+                    'table' => $tableName,
+                    'column' => $foreignKey['columns'][0],
+                    'relatedTable' => $foreignKey['foreign_table'],
+                    'relatedColumn' => $foreignKey['foreign_columns'][0],
+                    'onUpdate' => $foreignKey['on_update'],
+                    'onDelete' => $foreignKey['on_delete'],
                 ];
             }
         }
+    }
+
+    /**
+     * Check if a column type is an integer type.
+     *
+     * @param  string $columnType
+     * @return bool
+     */
+    private function isIntegerType(string $columnType): bool
+    {
+        $integerTypes = [
+            'int',
+            'integer',
+            'tinyint',
+            'smallint',
+            'mediumint',
+            'bigint',
+        ];
+
+        foreach ($integerTypes as $type) {
+            if (str_contains($columnType, $type)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

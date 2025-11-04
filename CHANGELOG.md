@@ -1,6 +1,21 @@
 Changelog
 =========
 
+3.0.0 (unreleased)
+------------------
+
+Add Laravel 11 & 12 support
+- Support PHP 8.2 and 8.4
+- Add illuminate/support ^11.0 || ^12.0
+- Add illuminate/database ^11.0 || ^12.0
+
+Breaking changes:
+- Drop Laravel 8, 9, 10 support
+- Drop PHP 8.1 support"
+- Remove doctrine/dbal dependency completely
+- Use native Laravel database introspection
+
+
 2.1.1 (2023-07-03)
 ------------------
 
