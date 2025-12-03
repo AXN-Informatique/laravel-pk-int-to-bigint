@@ -11,8 +11,8 @@ As a result, this package will be of great help to you to modernize an old appli
 
 ## Version Compatibility
 
-- **Version 4.x**: Laravel 12+ / PHP 8.4+
-- **Version 3.x**: Laravel 11-12 / PHP 8.2+ (uses native Laravel schema methods)
+- **Version 4.x**: Laravel 12+ / PHP 8.4+ (uses native Laravel schema methods)
+- **Version 3.x**: Laravel 11 / PHP 8.2+ (uses native Laravel schema methods) ⚠️ **Not compatible with Laravel 12**
 - **Version 2.x**: Laravel 8-10 / PHP 8.1+ (uses Doctrine DBAL)
 
 ## How it works
