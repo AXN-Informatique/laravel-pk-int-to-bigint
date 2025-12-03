@@ -15,6 +15,8 @@ class Transformer
 
     protected ?Command $command = null;
 
+    private ?string $schema = null;
+
     private array $intColumnsInfo = [];
 
     private array $foreignKeysConstraintsInfo = [];
@@ -26,6 +28,8 @@ class Transformer
     {
         $this->connection = $connection;
         $this->schemaBuilder = $connection->getSchemaBuilder();
+        $this->connection->getDatabaseName();
+        $this->setSchema();
     }
 
     /**
@@ -37,6 +41,11 @@ class Transformer
     public function setConsoleCommand(Command $command): void
     {
         $this->command = $command;
+    }
+
+    public function setSchema(?string $schema = null): void
+    {
+        $this->schema = $schema ?? $this->connection->getDatabaseName();
     }
 
     /**
@@ -124,7 +133,7 @@ class Transformer
         $this->intColumnsInfo = [];
         $this->foreignKeysConstraintsInfo = [];
 
-        foreach ($this->schemaBuilder->getTables() as $table) {
+        foreach ($this->schemaBuilder->getTables($this->schema) as $table) {
             $tableName = $table['name'];
             $tableIntColumnsNames = [];
 

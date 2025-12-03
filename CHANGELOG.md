@@ -1,6 +1,22 @@
 Changelog
 =========
 
+4.0.0 (unreleased)
+------------------
+
+Breaking changes:
+- Drop Laravel 11 support
+- Drop PHP 8.2 support
+- Require PHP 8.4+
+- Require Laravel 12+
+
+New features:
+- Add `--database` option to specify the database/schema to use
+
+Fixes:
+- Handle Laravel 12 multi-schema database inspection changes
+
+
 3.0.0 (2025-11-04)
 ------------------
 

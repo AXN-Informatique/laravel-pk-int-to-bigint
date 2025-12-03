@@ -11,7 +11,8 @@ As a result, this package will be of great help to you to modernize an old appli
 
 ## Version Compatibility
 
-- **Version 3.x**: Laravel 11+ / PHP 8.2+ (uses native Laravel schema methods)
+- **Version 4.x**: Laravel 12+ / PHP 8.4+
+- **Version 3.x**: Laravel 11-12 / PHP 8.2+ (uses native Laravel schema methods)
 - **Version 2.x**: Laravel 8-10 / PHP 8.1+ (uses Doctrine DBAL)
 
 ## How it works
@@ -31,7 +32,13 @@ Install the package with Composer:
 composer require axn/laravel-pk-int-to-bigint
 ```
 
-Or for Laravel 8-10 (version 2.x) :
+For Laravel 11 (version 3.x):
+
+```sh
+composer require axn/laravel-pk-int-to-bigint:^3.0
+```
+
+For Laravel 8-10 (version 2.x):
 
 ```sh
 composer require axn/laravel-pk-int-to-bigint:^2.0
@@ -47,6 +54,12 @@ If you want to run the command directly:
 
 ```sh
 php artisan pk-int-to-bigint:transform
+```
+
+You can specify a specific database/schema:
+
+```sh
+php artisan pk-int-to-bigint:transform --database=my_database
 ```
 
 ### Option 2: With migration
