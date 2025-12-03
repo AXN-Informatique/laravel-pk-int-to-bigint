@@ -1,7 +1,7 @@
 Changelog
 =========
 
-4.0.0 (unreleased)
+4.0.0 (2025-12-03)
 ------------------
 
 Breaking changes:
